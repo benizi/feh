@@ -22,6 +22,7 @@ debug ?= 0
 help ?= 0
 xinerama ?= 1
 exif ?= 0
+magic ?= 1
 
 ifeq (${curl},1)
 	CFLAGS += -DHAVE_LIBCURL
@@ -44,6 +45,11 @@ endif
 
 ifeq (${stat64},1)
 	CFLAGS += -D_FILE_OFFSET_BITS=64
+endif
+
+ifeq (${magic},1)
+	CFLAGS += -DHAVE_LIBMAGIC
+	LDLIBS += -lmagic
 endif
 
 ifeq (${xinerama},1)
