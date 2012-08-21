@@ -83,6 +83,35 @@ void init_xinerama(void)
 }
 #endif				/* HAVE_LIBXINERAMA */
 
+#ifdef HAVE_LIBMAGIC
+#include "magic.h"
+static int init_magic = 0;
+static int magic_ok = 0;
+static magic_t magic_cookie;
+
+static int load_magic(void) {
+	if (init_magic)
+		return;
+	magic_cookie = magic_open(MAGIC_MIME);
+	if (magic_cookie != NULL && !magic_load(magic_cookie, NULL)) {
+		magic_ok = 1;
+	}
+	init_magic++;
+}
+
+static int is_image(const char *filename) {
+	load_magic();
+	if (!magic_ok)
+		return 1;
+	const char *mime = magic_file(magic_cookie, filename);
+	if (mime == NULL)
+		return 1;
+	if (strncmp(mime, "image/", 6) != 0)
+		return 0;
+	return 1;
+}
+#endif
+
 void init_imlib_fonts(void)
 {
 	/* Set up the font stuff */
@@ -154,7 +183,16 @@ int feh_load_image(Imlib_Image * im, feh_file * file)
 		tmpname = feh_http_load_image(file->filename);
 	}
 	else
+#ifdef HAVE_LIBMAGIC
+	{
+		if (!is_image(file->filename))
+			err = IMLIB_LOAD_ERROR_NO_LOADER_FOR_FILE_FORMAT;
+		else
+#endif
 		*im = imlib_load_image_with_error_return(file->filename, &err);
+#ifdef HAVE_LIBMAGIC
+	}
+#endif
 
 	if ((err == IMLIB_LOAD_ERROR_UNKNOWN)
 			|| (err == IMLIB_LOAD_ERROR_NO_LOADER_FOR_FILE_FORMAT)) {
