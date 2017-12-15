@@ -271,9 +271,23 @@ int feh_load_image(Imlib_Image * im, feh_file * file)
 		return(0);
 	}
 
+	int orientation = 0;
 #ifdef HAVE_LIBEXIF
-	file->ed = exif_get_data(file->filename);
+	ExifData *exifData = exif_get_data(file->filename);
+	if (exifData) {
+	    ExifByteOrder byteOrder = exif_data_get_byte_order(exifData);
+	    ExifEntry *exifEntry = exif_data_get_entry(exifData, EXIF_TAG_ORIENTATION);
+	    if (exifEntry != NULL)
+		orientation = exif_get_short(exifEntry->data, byteOrder);
+	}
+	file->ed = exifData;
 #endif		
+	switch (orientation) {
+	    case 3: gib_imlib_image_orientate(*im, 2); break;
+	    case 6: gib_imlib_image_orientate(*im, 1); break;
+	    case 8: gib_imlib_image_orientate(*im, 3); break;
+	    default: break;
+	}
 
 	D(("Loaded ok\n"));
 	return(1);
